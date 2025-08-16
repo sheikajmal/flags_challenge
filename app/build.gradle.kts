@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.core.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -59,6 +60,15 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // coroutines test
+    testImplementation(libs.org.jetbrains.kotlinx.coroutines.test)
+
+    // mock test
+    testImplementation(libs.org.mockito.kotlin)
+
+    //turbine test
+    testImplementation(libs.app.cash.turbine)
+
     // gson
     implementation(libs.google.code.gson)
 
@@ -66,6 +76,6 @@ dependencies {
     implementation(libs.google.dagger.hilt.android)
     ksp(libs.google.dagger.hilt.android.compiler)
 
-    // preference
+    // preferences
     implementation(libs.androidx.datastore.preferences)
 }

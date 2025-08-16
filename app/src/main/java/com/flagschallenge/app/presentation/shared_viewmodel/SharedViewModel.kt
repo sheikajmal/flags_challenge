@@ -4,19 +4,18 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.flagschallenge.app.R
-import com.flagschallenge.app.domain.model.Questions
 import com.flagschallenge.app.data.repository.CountdownRepository
+import com.flagschallenge.app.domain.model.Questions
 import com.flagschallenge.app.utils.Constants.MODE_COUNTDOWN
 import com.flagschallenge.app.utils.Constants.MODE_IDLE
 import com.flagschallenge.app.utils.Constants.MODE_QUIZ
 import com.flagschallenge.app.utils.Constants.MODE_SCORE
+import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
@@ -26,18 +25,12 @@ import kotlin.math.max
 
 @HiltViewModel
 class SharedViewModel @Inject constructor(
+    private val ticker: Flow<Long>,
     private val countdownRepository: CountdownRepository
 ) : ViewModel() {
 
     private val TOTAL_DURATION = 41_000L
     lateinit var questionsObj: Questions
-
-    private val ticker: Flow<Long> = flow {
-        while (true) {
-            emit(System.currentTimeMillis())
-            delay(1000L)
-        }
-    }
 
     private val _mode =
         countdownRepository.modeFlow().stateIn(viewModelScope, SharingStarted.Eagerly, MODE_IDLE)
@@ -69,7 +62,6 @@ class SharedViewModel @Inject constructor(
                 val timeIntoCurrentQuestion = elapsed % TOTAL_DURATION
                 val remainingMillis = TOTAL_DURATION - timeIntoCurrentQuestion
                 remainingMillis
-                //remainingMillis / 1000 // return in seconds
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -92,15 +84,11 @@ class SharedViewModel @Inject constructor(
         }
     }
 
-    fun clearAll() {
-        viewModelScope.launch { countdownRepository.clearAll() }
-    }
-
-
-    fun readJsonFromAssets(context: Context): String {
+    fun readJsonFromAssets(context: Context): Questions {
         val inputStream = context.assets.open("questions.json")
         val bufferedReader = BufferedReader(InputStreamReader(inputStream))
-        return bufferedReader.use { it.readText() }
+        val json = bufferedReader.use { it.readText() }
+        return Gson().fromJson(json, Questions::class.java)
     }
 
     fun scheduleTime(hours: Long, minutes: Long, seconds: Long) = viewModelScope.launch {
@@ -140,6 +128,10 @@ class SharedViewModel @Inject constructor(
     fun clearScore() = viewModelScope.launch {
         countdownRepository.saveMode(MODE_IDLE)
         countdownRepository.clearScore()
+    }
+
+    fun clearAll() {
+        viewModelScope.launch { countdownRepository.clearAll() }
     }
 
     fun getCountryFlag(countryCode: String): Int {

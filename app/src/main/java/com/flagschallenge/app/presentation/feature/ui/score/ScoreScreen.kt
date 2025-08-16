@@ -51,7 +51,7 @@ fun ScoreScreen(sharedViewModel: SharedViewModel) {
         coroutineScope.launch {
             delay(3000)
             showScore = true
-            delay(4000)
+            delay(3000)
             sharedViewModel.clearScore()
         }
     }

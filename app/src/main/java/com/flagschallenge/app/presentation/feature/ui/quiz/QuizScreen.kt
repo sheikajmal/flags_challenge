@@ -28,6 +28,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,11 +59,13 @@ import com.flagschallenge.app.utils.millisToHms
 @Composable
 fun QuizScreen(sharedViewModel: SharedViewModel) {
 
+    var showAnswer by remember { mutableStateOf(false) }
     val index by sharedViewModel.questionIndex.collectAsState()
     val remainingScreenTime by sharedViewModel.remainingQuestionTimeMillis.collectAsState()
     var remainingQuestionTime by remember { mutableLongStateOf(0L) }
     val (h, m, s) = millisToHms(if (remainingQuestionTime <= 0L) remainingScreenTime ?: 0L else remainingQuestionTime)
-    var selectionId by remember { mutableIntStateOf(0) }
+    var selectionId by remember { mutableIntStateOf(-1) }
+    var pointAdded by remember { mutableStateOf(false) }
 
     if (index < 0) {
         Box(
@@ -102,12 +105,16 @@ fun QuizScreen(sharedViewModel: SharedViewModel) {
 
     LaunchedEffect(index) {
         selectionId = -1
+        pointAdded = false
     }
 
     LaunchedEffect(remainingScreenTime) {
         remainingQuestionTime = (remainingScreenTime ?: 0L) - 11_000L
-        if (remainingQuestionTime <= 0L && selectionId == curQues.answer_id)
+        if (remainingQuestionTime <= 0L && selectionId == curQues.answer_id && !pointAdded) {
+            pointAdded = true
             sharedViewModel.saveScore()
+        }
+        showAnswer = (remainingScreenTime ?: 0L) > 1_000L && remainingQuestionTime < 5_000L
     }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -226,7 +233,7 @@ fun QuizScreen(sharedViewModel: SharedViewModel) {
                                             else
                                                 Modifier.border(
                                                     width = 1.dp,
-                                                    color = if (remainingQuestionTime <= 0L && country.id == curQues.answer_id)
+                                                    color = if (remainingQuestionTime <= 0L && country.id == curQues.answer_id && showAnswer)
                                                         theme
                                                     else
                                                         onPrimary,
@@ -258,12 +265,14 @@ fun QuizScreen(sharedViewModel: SharedViewModel) {
                                 }
 
                                 Text(
-                                    text = if (remainingQuestionTime <= 0L && country.id == curQues.answer_id)
-                                        "Correct"
-                                    else if (remainingQuestionTime <= 0L && country.id == selectionId && selectionId != curQues.answer_id)
-                                        "Wrong"
-                                    else
-                                        "",
+                                    text = if (showAnswer) {
+                                        if (remainingQuestionTime <= 0L && country.id == curQues.answer_id)
+                                            "Correct"
+                                        else if (remainingQuestionTime <= 0L && country.id == selectionId && selectionId != curQues.answer_id)
+                                            "Wrong"
+                                        else
+                                            ""
+                                    } else "",
                                     color = if (country.id == curQues.answer_id) onTheme else theme,
                                     fontSize = 12.sp,
                                     lineHeight = 12.sp,
